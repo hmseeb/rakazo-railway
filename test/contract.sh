@@ -5,7 +5,7 @@
 # Usage: test/contract.sh [image-ref]
 set -uo pipefail
 
-IMAGE="${1:-ghcr.io/hmseeb/rakazo-railway:v0.1.6}"
+IMAGE="${1:-ghcr.io/hmseeb/rakazo-railway/app:v0.1.6}"
 NET="rakazo-contract-$$"
 PG="rakazo-pg-$$"
 APP="rakazo-app-$$"
@@ -17,6 +17,10 @@ cleanup() {
 }
 trap cleanup EXIT
 fail() { echo "FAIL: $1"; exit 1; }
+
+docker rm -f "$APP" "$PG" >/dev/null 2>&1
+docker network rm "$NET" >/dev/null 2>&1
+docker volume rm "rakazo-data-$$" >/dev/null 2>&1
 
 docker network create "$NET" >/dev/null || fail "docker network"
 
@@ -30,7 +34,8 @@ docker pull "$IMAGE" >/dev/null || fail "image pull $IMAGE"
 
 # Named volume, never chowned by us: docker creates it root-owned, matching
 # Railway's volume mounts.
-docker run -d --name "$APP" --network "$NET" -p 5173:5173 \
+HOST_PORT="${HOST_PORT:-15173}"
+docker run -d --name "$APP" --network "$NET" -p 127.0.0.1:$HOST_PORT:5173 \
   -v "rakazo-data-$$:/data" \
   -e NODE_ENV=production \
   -e DATABASE_URL="postgresql://postgres:$PGPASS@$PG:5432/rakazo" \
@@ -49,7 +54,7 @@ docker run -d --name "$APP" --network "$NET" -p 5173:5173 \
 # 1. Serves the app through the vite proxy (proves web + proxy + api + migrate).
 ok=""
 for _ in $(seq 1 90); do
-  code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5173/api/auth/capabilities || true)
+  code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$HOST_PORT/api/auth/capabilities || true)
   [ "$code" = "200" ] && { ok=1; break; }
   docker ps -q -f name="$APP" | grep -q . || { docker logs "$APP" 2>&1 | tail -30; fail "container exited before becoming healthy"; }
   sleep 2

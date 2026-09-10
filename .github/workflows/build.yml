@@ -24,5 +24,5 @@ jobs:
           context: image
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:v0.1.6
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}/app:v0.1.6
+            ghcr.io/${{ github.repository }}/app:latest

@@ -8,7 +8,7 @@
     "$note": "Pinned to the v0.1.6 image tag, not edge: edge moves on every main build and a template must not silently change under existing deployers."
   },
   "image": {
-    "ref": "ghcr.io/hmseeb/rakazo-railway:v0.1.6",
+    "ref": "ghcr.io/hmseeb/rakazo-railway/app:v0.1.6",
     "built_from": "https://github.com/hmseeb/rakazo-railway",
     "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.1.6. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data then runuser-drops to node and boots all three processes with wait -n."
   },
@@ -40,7 +40,7 @@
     },
     {
       "name": "Rakazo",
-      "image": "ghcr.io/hmseeb/rakazo-railway:v0.1.6",
+      "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.1.6",
       "start_command": null,
       "$note_start_command": "Deliberately empty. Railway execs a start command raw and DISCARDS the image entrypoint; the entrypoint is where the /data chown and the whole boot sequence live.",
       "healthcheck": {

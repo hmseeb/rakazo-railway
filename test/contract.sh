@@ -5,7 +5,7 @@
 # Usage: test/contract.sh [image-ref]
 set -uo pipefail
 
-IMAGE="${1:-ghcr.io/hmseeb/rakazo-railway/app:v0.1.6}"
+IMAGE="${1:-ghcr.io/hmseeb/rakazo-railway/app:v0.1.6-r1}"
 NET="rakazo-contract-$$"
 PG="rakazo-pg-$$"
 APP="rakazo-app-$$"
@@ -73,7 +73,13 @@ docker exec -u node "$APP" touch /data/.contract-write-test \
 procs=$(docker exec "$APP" bash -c 'ps -eo args | grep -c "[p]npm --filter @rakazo"')
 [ "$procs" -ge 3 ] || fail "expected api+worker+web running, found $procs"
 
-# 5. Migration actually ran.
+# 5. Foreign Host headers are answered (vite allowedHosts patched at boot).
+# Railway's healthchecker never sends the public domain as Host, so without
+# this every probe was a 403 and deploys died at healthcheck.
+code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: probe.internal' http://127.0.0.1:$HOST_PORT/api/auth/capabilities)
+[ "$code" = "200" ] || fail "foreign Host got $code (allowedHosts patch missing)"
+
+# 6. Migration actually ran.
 docker exec "$PG" psql -U postgres -d rakazo -tAc "select count(*) from information_schema.tables where table_schema='public'" \
   | awk '$1 > 5 {ok=1} END {exit ok?0:1}' || fail "prisma migrate deploy did not create the schema"
 

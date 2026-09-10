@@ -1,0 +1,116 @@
+{
+ "templateGenerate": {
+  "serializedConfig": {
+   "buckets": {},
+   "services": {
+    "1d14652c-1d66-4565-af21-127085ea117d": {
+     "icon": null,
+     "name": "Rakazo",
+     "deploy": {
+      "startCommand": null,
+      "healthcheckPath": "/api/auth/capabilities",
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
+     },
+     "source": {
+      "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.1.6-r1"
+     },
+     "variables": {
+      "PORT": {
+       "isOptional": false
+      },
+      "API_URL": {
+       "isOptional": false
+      },
+      "DATA_DIR": {
+       "isOptional": false
+      },
+      "NODE_ENV": {
+       "isOptional": false
+      },
+      "WEB_ORIGIN": {
+       "isOptional": false
+      },
+      "RAKAZO_HOST": {
+       "isOptional": false
+      },
+      "DATABASE_URL": {
+       "isOptional": false
+      },
+      "ENCRYPTION_KEY": {
+       "isOptional": false
+      },
+      "BETTER_AUTH_URL": {
+       "isOptional": false
+      },
+      "SIGNUPS_ENABLED": {
+       "isOptional": false
+      },
+      "SANDBOX_PROVIDER": {
+       "isOptional": false
+      },
+      "BETTER_AUTH_SECRET": {
+       "isOptional": false
+      },
+      "PI_DEFAULT_PROVIDER": {
+       "isOptional": false
+      },
+      "SCREEN_PROXY_SECRET": {
+       "isOptional": false
+      }
+     },
+     "networking": {
+      "serviceDomains": {
+       "<hasDomain>:5173": {
+        "port": 5173
+       }
+      }
+     },
+     "volumeMounts": {
+      "1d14652c-1d66-4565-af21-127085ea117d": {
+       "mountPath": "/data"
+      }
+     }
+    },
+    "64ae3b88-61a4-4071-857f-06fc0adf8e1e": {
+     "icon": null,
+     "name": "Postgres",
+     "deploy": {
+      "startCommand": null,
+      "healthcheckPath": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
+     },
+     "source": {
+      "image": "ghcr.io/railwayapp-templates/postgres-ssl:17"
+     },
+     "variables": {
+      "PGDATA": {
+       "isOptional": false
+      },
+      "POSTGRES_DB": {
+       "isOptional": false
+      },
+      "POSTGRES_USER": {
+       "isOptional": false
+      },
+      "SSL_CERT_DAYS": {
+       "isOptional": false
+      },
+      "POSTGRES_PASSWORD": {
+       "isOptional": false
+      },
+      "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+       "isOptional": false
+      }
+     },
+     "volumeMounts": {
+      "64ae3b88-61a4-4071-857f-06fc0adf8e1e": {
+       "mountPath": "/var/lib/postgresql/data"
+      }
+     }
+    }
+   }
+  }
+ }
+}

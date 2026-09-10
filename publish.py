@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path("~/.claude/skills/create-template-for-railway/scripts").expanduser()))
 import rw  # noqa: E402
 
-TEMPLATE_ID = "FILL_AFTER_REPAIR"
+TEMPLATE_ID = "f4af9e50-05a3-4925-a48d-fdacd2595720"
 WORKSPACE = "fc4796db-2c6c-4354-a564-d4a1d900af53"  # Auromations
 # 75 characters is the hard limit and Railway truncates silently past it. This
 # is the field marketplace search actually reads, so the keywords live here
@@ -22,7 +22,7 @@ published = rw.gql(
          templatePublish(id: $id, input: $input) { id code isApproved }
        }""",
     {"id": TEMPLATE_ID,
-     "input": {"category": "AI", "description": DESCRIPTION, "readme": README, "workspaceId": WORKSPACE}},
+     "input": {"category": "AI/ML", "description": DESCRIPTION, "readme": README, "workspaceId": WORKSPACE}},
 )["templatePublish"]
 print(published)
 print(f"https://railway.com/deploy/{published['code']}")

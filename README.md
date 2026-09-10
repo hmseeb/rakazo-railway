@@ -4,7 +4,7 @@ One-click Railway template for [Rakazo](https://github.com/elie222/rakazo) -
 persistent AI teammates with their own conversations, memory, routines, and
 optional cloud computers.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/rakazo)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/rakazo-single-container)
 
 ## What you get
 

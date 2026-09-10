@@ -10,7 +10,7 @@ import time
 sys.path.insert(0, str(pathlib.Path("~/.claude/skills/create-template-for-railway/scripts").expanduser()))
 import rw  # noqa: E402
 
-TEMPLATE_ID = "FILL_AFTER_REPAIR"
+TEMPLATE_ID = "f4af9e50-05a3-4925-a48d-fdacd2595720"
 WORKSPACE_ID = "fc4796db-2c6c-4354-a564-d4a1d900af53"
 
 config = rw.gql(

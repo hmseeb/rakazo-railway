@@ -1,6 +1,6 @@
 {
   "$schema": "internal build sheet, not a Railway file",
-  "name": "Rakazo",
+  "name": "Rakazo (Single Container)",
   "upstream": {
     "repo": "https://github.com/elie222/rakazo",
     "license": "Apache-2.0",
@@ -40,7 +40,7 @@
       }
     },
     {
-      "name": "Rakazo",
+      "name": "Rakazo (Single Container)",
       "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.1.6-r1",
       "start_command": null,
       "$note_start_command": "Deliberately empty. Railway execs a start command raw and DISCARDS the image entrypoint; the entrypoint is where the /data chown and the whole boot sequence live.",

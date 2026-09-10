@@ -1,0 +1,109 @@
+{
+  "$schema": "internal build sheet, not a Railway file",
+  "name": "Rakazo",
+  "upstream": {
+    "repo": "https://github.com/elie222/rakazo",
+    "license": "Apache-2.0",
+    "version": "v0.1.6 (release 2026-09-08)",
+    "$note": "Pinned to the v0.1.6 image tag, not edge: edge moves on every main build and a template must not silently change under existing deployers."
+  },
+  "image": {
+    "ref": "ghcr.io/hmseeb/rakazo-railway:v0.1.6",
+    "built_from": "https://github.com/hmseeb/rakazo-railway",
+    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.1.6. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data then runuser-drops to node and boots all three processes with wait -n."
+  },
+  "topology": {
+    "decision": "Two services: Railway Postgres, and one app container running api + worker + web (vite preview).",
+    "why_bundled": [
+      "apps/api and apps/worker both hold bot state under DATA_DIR (LocalAgentHomeStore, LocalArtifactStore, Pi session roots, Expo push tokens - verified in apps/api/src/app.ts and apps/worker/src/index.ts). A Railway volume cannot attach to two services, so they share one container and one /data volume.",
+      "web is bundled too rather than split: vite preview already same-origin-proxies /api and /rpc to API_PROXY_TARGET (default 127.0.0.1:3100), so in one container no private networking is involved at all and the IPv6 question shrinks to the single public listener.",
+      "api binds loopback (API_HOST unset, default 127.0.0.1) and is only reachable through the web proxy, matching upstream's published-images Compose which never exposes :3100 publicly."
+    ],
+    "sandbox": "SANDBOX_PROVIDER defaults to none. The docker provider is impossible on Railway (no docker socket, no sibling containers); deployers wanting bot computers set e2b, daytona or box plus the matching API key. Supervisor service and SANDBOX_SUPERVISOR_TOKEN are deliberately absent - the token only guards the docker-socket supervisor.",
+    "alternative_rejected": "Faithful compose-mirroring split (api, worker, web as separate services) silently breaks bot file state because the volume cannot be shared. A web-only split saves nothing and adds an IPv6 private-network hop."
+  },
+  "services": [
+    {
+      "name": "Postgres",
+      "image": "ghcr.io/railwayapp-templates/postgres-ssl:17",
+      "$note": "Railway's own Postgres config shape, lettertrace precedent. PGDATA is a SUBDIRECTORY of the mount because volume roots contain lost+found and initdb refuses a non-empty directory.",
+      "volume": { "mount": "/var/lib/postgresql/data" },
+      "variables": {
+        "PGDATA": "/var/lib/postgresql/data/pgdata",
+        "POSTGRES_DB": "railway",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+        "DATABASE_URL": "postgresql://postgres:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/railway",
+        "SSL_CERT_DAYS": "820",
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": "60"
+      }
+    },
+    {
+      "name": "Rakazo",
+      "image": "ghcr.io/hmseeb/rakazo-railway:v0.1.6",
+      "start_command": null,
+      "$note_start_command": "Deliberately empty. Railway execs a start command raw and DISCARDS the image entrypoint; the entrypoint is where the /data chown and the whole boot sequence live.",
+      "healthcheck": {
+        "path": "/api/auth/capabilities",
+        "$note": "Unauthenticated 200 served by the api THROUGH the vite proxy, so a pass proves web + proxy + api + migrations all at once. /health exists only on the api's loopback port and is not proxied. No hyphens in the path (Railway rejects those silently)."
+      },
+      "domain": {
+        "target_port": 5173,
+        "$note": "Pinned. Railway's port autodetection is unreliable and the injected PORT=8080 would drift the healthcheck off the real listener."
+      },
+      "restart_policy": "ON_FAILURE",
+      "volume": { "mount": "/data" },
+      "variables": {
+        "PORT": {
+          "value": "5173",
+          "$note": "Railway injects PORT=8080 on image services and healthchecks against PORT; pin it to the port the domain targets. boot.sh passes --port \"${PORT:-5173}\"."
+        },
+        "NODE_ENV": { "value": "production" },
+        "DATABASE_URL": {
+          "value": "${{Postgres.DATABASE_URL}}",
+          "$note": "Name-based reference, never a service UUID: UUID-keyed references resolve to empty after config regeneration."
+        },
+        "DATA_DIR": { "value": "/data" },
+        "BETTER_AUTH_SECRET": {
+          "value": "${{secret(32)}}",
+          "$note": "32+ chars required by upstream env docs."
+        },
+        "ENCRYPTION_KEY": {
+          "value": "${{secret(64, \"0123456789abcdef\")}}",
+          "$note": "Exactly 64 hex chars (encrypts stored provider credentials). Changing it makes saved keys unreadable - never regenerate on an existing deployment."
+        },
+        "SCREEN_PROXY_SECRET": {
+          "value": "${{secret(32)}}",
+          "$note": "Guards the noVNC screen proxy; unused while SANDBOX_PROVIDER=none but cheap to provision."
+        },
+        "BETTER_AUTH_URL": { "value": "https://${{RAILWAY_PUBLIC_DOMAIN}}" },
+        "WEB_ORIGIN": { "value": "https://${{RAILWAY_PUBLIC_DOMAIN}}" },
+        "API_URL": { "value": "https://${{RAILWAY_PUBLIC_DOMAIN}}" },
+        "RAKAZO_HOST": {
+          "value": "${{RAILWAY_PUBLIC_DOMAIN}}",
+          "$note": "vite preview allowedHosts is exactly [RAKAZO_HOST]; without the public hostname every browser request is 403 Blocked."
+        },
+        "SIGNUPS_ENABLED": {
+          "value": "true",
+          "$note": "First registered user becomes the deployment owner. Deployers wanting a private instance set SIGNUP_ALLOWLIST or flip this to false after registering."
+        },
+        "SANDBOX_PROVIDER": {
+          "value": "none",
+          "prompt": true,
+          "$note": "none | e2b | daytona | box. docker is not possible on Railway. none = bots chat but cannot open a computer."
+        },
+        "E2B_API_KEY": { "value": "", "prompt": true, "$note": "Only when SANDBOX_PROVIDER=e2b." },
+        "DAYTONA_API_KEY": { "value": "", "prompt": true, "$note": "Only when SANDBOX_PROVIDER=daytona." },
+        "BOX_API_KEY": { "value": "", "prompt": true, "$note": "Only when SANDBOX_PROVIDER=box." },
+        "OPENROUTER_API_KEY": {
+          "value": "",
+          "prompt": true,
+          "$note": "Deployment-wide fallback model. Optional: models can also be connected in the UI after signup, which is where the app verifies keys anyway. PI_DEFAULT_PROVIDER stays openrouter to match."
+        },
+        "PI_DEFAULT_PROVIDER": { "value": "openrouter" }
+      }
+    }
+  ],
+  "$note_prompts": "Four prompts, three of them skippable: SANDBOX_PROVIDER (default none), one provider key, and an optional OpenRouter key. No account signup blocks the deploy button.",
+  "telemetry": "PostHog keys unset by default. Nothing leaves the deployment except calls to providers the deployer configures with the deployer's own keys."
+}

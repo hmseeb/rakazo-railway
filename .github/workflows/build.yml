@@ -1,0 +1,28 @@
+name: build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [image/**, .github/workflows/build.yml]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Public repo + GITHUB_TOKEN push = anonymously pullable package, which is
+      # exactly what Railway's puller needs. No visibility flip.
+      - uses: docker/build-push-action@v6
+        with:
+          context: image
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:v0.1.6
+            ghcr.io/${{ github.repository }}:latest

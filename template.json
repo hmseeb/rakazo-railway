@@ -10,7 +10,8 @@
   "image": {
     "ref": "ghcr.io/hmseeb/rakazo-railway/app:v0.1.6-r1",
     "built_from": "https://github.com/hmseeb/rakazo-railway",
-    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.1.6. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data then runuser-drops to node and boots all three processes with wait -n."
+    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.1.6. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data, patches vite allowedHosts (see boot.sh), then runuser-drops to node and boots all three processes with wait -n.",
+    "$platform": "Railway is linux/amd64. A local build on Apple Silicon pushed as-is produces an arm64-only tag whose Railway deploy fails INSTANTLY with zero container logs (hit 2026-09-10 on v0.1.6-r1). Local builds must pass --platform linux/amd64; the GitHub Actions path is amd64-native and is the durable build."
   },
   "topology": {
     "decision": "Two services: Railway Postgres, and one app container running api + worker + web (vite preview).",

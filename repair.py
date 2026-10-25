@@ -29,7 +29,7 @@ WORKSPACE = "fc4796db-2c6c-4354-a564-d4a1d900af53"  # Auromations
 NAME = "Rakazo (Single Container)"
 # Served from upstream's own repo, pinned to the release tag the image is built
 # from, so a later upstream commit cannot change or 404 the listing icon.
-ICON = "https://rakazo.com/favicon.svg"
+ICON = "https://raw.githubusercontent.com/elie222/rakazo/v0.1.6/apps/web/public/favicon.svg"
 
 AUTH_HELP = (
     "Signs everyone's sessions. Generated for you. "

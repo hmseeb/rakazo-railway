@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths: [image/**, test/**, .github/workflows/build.yml]
 env:
-  TAG: v0.13.0-r1
+  TAG: v0.13.0-r2
 jobs:
   build:
     runs-on: ubuntu-latest

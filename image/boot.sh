@@ -23,10 +23,22 @@ export CLIENT_IP_HEADER="${CLIENT_IP_HEADER:-x-real-ip}"
 # Drop to node and run the stack. First process to exit takes the container
 # down with it so Railway's restart policy replaces the whole unit instead of
 # leaving a half-dead stack serving 502s.
-exec runuser -u node -- bash -c '
+# One-shot steps first, in their own process: migrate, then create the
+# OWNER_EMAIL account (upstream's bootstrap; it skips an already verified
+# account, so restarts are no-ops). The long-lived stack below never sees
+# OWNER_PASSWORD, not even in its own /proc environ.
+runuser -u node -- bash -c '
 set -u
 cd /app
 pnpm --filter @rakazo/api db:deploy || exit 1
+if [ -n "${OWNER_EMAIL:-}" ]; then
+  pnpm --filter @rakazo/api exec node dist/cli/bootstrap-owner.js || exit 1
+fi
+' || exit 1
+
+exec runuser -u node -- env -u OWNER_PASSWORD bash -c '
+set -u
+cd /app
 pnpm --filter @rakazo/api start & p1=$!
 pnpm --filter @rakazo/worker start & p2=$!
 # The web server needs none of the api secrets (upstream drops the same set).

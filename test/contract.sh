@@ -5,7 +5,7 @@
 # Usage: test/contract.sh [image-ref]
 set -uo pipefail
 
-IMAGE="${1:-ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r1}"
+IMAGE="${1:-ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r2}"
 NET="rakazo-contract-$$"
 PG="rakazo-pg-$$"
 APP="rakazo-app-$$"

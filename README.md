@@ -10,24 +10,24 @@ optional cloud computers.
 
 - **Rakazo** - one container running the api, the Graphile worker, and the web
   UI (vite preview). Built from `ghcr.io/hmseeb/rakazo-railway`, a thin wrapper
-  over upstream's `ghcr.io/elie222/rakazo/app:v0.1.6` that fixes Railway volume
+  over upstream's `ghcr.io/elie222/rakazo/app:v0.13.0` that fixes Railway volume
   ownership and boots the three processes together.
 - **Postgres** - Railway's postgres-ssl image with a persistent volume.
 
 ## After deploy
 
-1. Open the public URL. The **first registered user becomes the deployment
-   owner**.
+1. Open the public URL and register your account right away (signups are
+   open until you close them).
 2. Bots can chat immediately once a model is connected. Either paste an
    OpenRouter key at deploy time or connect a model in the UI after signup.
 3. Bot computers are **off by default** (`SANDBOX_PROVIDER=none`) because
    Docker-in-Railway is not possible. To give bots a desktop, set
-   `SANDBOX_PROVIDER` to `e2b`, `daytona` or `box` and the matching API key
+   `SANDBOX_PROVIDER` to `e2b` or `daytona` and the matching API key
    variable, then redeploy.
 
 ## Notes
 
-- Signups stay open after the first user. Set `SIGNUPS_ENABLED=false` (or
+- Signups stay open after your account exists. Set `SIGNUPS_ENABLED=false` (or
   `SIGNUP_ALLOWLIST`) on the Rakazo service to close the instance.
 - `ENCRYPTION_KEY` encrypts stored provider credentials. Never regenerate it on
   an existing deployment - every saved key becomes unreadable.

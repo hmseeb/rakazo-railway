@@ -10,6 +10,7 @@ NET="rakazo-contract-$$"
 PG="rakazo-pg-$$"
 APP="rakazo-app-$$"
 PGPASS="contractpw$$"
+OWNER_PW="contract-owner-pw-$$-0123456789"
 
 cleanup() {
   docker rm -f "$APP" "$PG" >/dev/null 2>&1
@@ -49,7 +50,9 @@ docker run -d --name "$APP" --network "$NET" -p 127.0.0.1:$HOST_PORT:5173 \
   -e RAKAZO_HOST=127.0.0.1 \
   -e ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef \
   -e SCREEN_PROXY_SECRET=contract-screen-secret-0123456789ab \
-  -e SIGNUPS_ENABLED=true \
+  -e SIGNUPS_ENABLED=false \
+  -e OWNER_EMAIL=owner@contract.test \
+  -e OWNER_PASSWORD="$OWNER_PW" \
   -e SANDBOX_PROVIDER=none \
   -e DATA_DIR=/data \
   "$IMAGE" >/dev/null || fail "app start"
@@ -89,6 +92,17 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: probe.invalid' http://12
 docker exec "$PG" psql -U postgres -d rakazo -tAc "select count(*) from information_schema.tables where table_schema='public'" \
   | awk '$1 > 5 {ok=1} END {exit ok?0:1}' || fail "prisma migrate deploy did not create the schema"
 
+auth() { # auth PATH JSON -> http code
+  curl -s -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:5173' -H 'Content-Type: application/json' \
+    -d "$2" "http://127.0.0.1:$HOST_PORT/api/auth/$1"
+}
+owner_signin() { auth sign-in/email "{\"email\":\"owner@contract.test\",\"password\":\"$OWNER_PW\"}"; }
+
+# 6b. Who can sign up: the boot bootstraps OWNER_EMAIL, and a stranger is refused.
+code=$(owner_signin); [ "$code" = "200" ] || fail "owner sign-in got $code (OWNER_EMAIL bootstrap missing)"
+code=$(auth sign-up/email '{"email":"stranger@contract.test","password":"stranger-pw-0123456789","name":"x"}')
+[ "$code" != "200" ] || fail "stranger sign-up accepted (signups must be closed)"
+
 # 7. Boot is idempotent: Railway restarts keep the container filesystem.
 for n in 2 3; do
   docker restart "$APP" >/dev/null || fail "restart $n"
@@ -99,6 +113,7 @@ for n in 2 3; do
     sleep 2
   done
   [ -n "$ok" ] || { docker logs "$APP" 2>&1 | tail -30; fail "not healthy after start $n"; }
+  code=$(owner_signin); [ "$code" = "200" ] || fail "owner sign-in got $code after start $n"
 done
 
 docker volume rm "rakazo-data-$$" >/dev/null 2>&1

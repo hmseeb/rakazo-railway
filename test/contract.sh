@@ -73,7 +73,8 @@ docker exec -u node "$APP" touch /data/.contract-write-test \
   || fail "uid 1000 cannot write /data (volume chown missing)"
 
 # 4. All three processes alive.
-procs=$(docker exec "$APP" bash -c 'ps -eo args | grep -c "[p]npm --filter @rakazo"')
+# /proc, not ps: the upstream slim base ships without procps.
+procs=$(docker exec "$APP" bash -c 'for f in /proc/[0-9]*/cmdline; do tr "\\0" " " < "$f" 2>/dev/null; echo; done | grep -c "^pnpm --filter @rakazo/\(api\|worker\|web\) "')
 [ "$procs" -ge 3 ] || fail "expected api+worker+web running, found $procs"
 
 # 5. Railway's healthchecker sends Host: healthcheck.railway.app. vite preview

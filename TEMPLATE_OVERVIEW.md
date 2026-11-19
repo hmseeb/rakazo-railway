@@ -42,9 +42,11 @@ signing, at-rest encryption, screen proxy) is generated for you at deploy time.
 
 ### Implementation Details
 
-1. Click deploy. Two services come up: Postgres and Rakazo.
-2. Open the Rakazo service's public URL and register your account. Signups are
-   open until you close them, so register right away.
+1. Enter your email in `OWNER_EMAIL` and click deploy. Two services come up:
+   Postgres and Rakazo.
+2. Open the Rakazo service's public URL and sign in with `OWNER_EMAIL` and the
+   generated `OWNER_PASSWORD` from the Rakazo service's Variables tab. Change
+   the password in account settings.
 3. Bots can chat once a model is connected. If you did not paste an OpenRouter
    key at deploy time, connect a model in the UI after signup; the app verifies
    the key against the provider before storing it, encrypted.
@@ -53,8 +55,10 @@ signing, at-rest encryption, screen proxy) is generated for you at deploy time.
    to `e2b` or `daytona` plus the matching API key variable on the Rakazo
    service, then redeploy.
 
-Signups stay open after your account exists. Set `SIGNUPS_ENABLED=false` (or
-`SIGNUP_ALLOWLIST`) on the Rakazo service to close the instance.
+Who can sign up: only you. First boot creates the `OWNER_EMAIL` account and
+public registration is closed (`SIGNUPS_ENABLED=false`), so strangers who find
+your URL are refused. To invite others, set `SIGNUP_ALLOWLIST` (emails or
+@domains) and `SIGNUPS_ENABLED=true`, then redeploy.
 
 Troubleshooting:
 
@@ -68,7 +72,7 @@ Troubleshooting:
 - **Never regenerate `ENCRYPTION_KEY`** on an existing deployment: it encrypts
   every stored provider key, and changing it makes them all unreadable.
 
-Upgrades: the image tag is pinned (`v0.13.0`). To move to a newer Rakazo release,
+Upgrades: the image tag is pinned (`v0.13.0-r2`). To move to a newer Rakazo release,
 update the Rakazo service's image tag and redeploy. Migrations run on every
 boot. Bot conversations and memory live in Postgres; agent homes and artifacts
 live on the `/data` volume; both survive redeploys.

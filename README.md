@@ -16,8 +16,8 @@ optional cloud computers.
 
 ## After deploy
 
-1. Open the public URL and register your account right away (signups are
-   open until you close them).
+1. Set `OWNER_EMAIL` at deploy time. Open the public URL and sign in with it
+   and the generated `OWNER_PASSWORD` (Rakazo service, Variables tab).
 2. Bots can chat immediately once a model is connected. Either paste an
    OpenRouter key at deploy time or connect a model in the UI after signup.
 3. Bot computers are **off by default** (`SANDBOX_PROVIDER=none`) because
@@ -27,8 +27,9 @@ optional cloud computers.
 
 ## Notes
 
-- Signups stay open after your account exists. Set `SIGNUPS_ENABLED=false` (or
-  `SIGNUP_ALLOWLIST`) on the Rakazo service to close the instance.
+- Who can sign up: only the `OWNER_EMAIL` account. Registration is closed
+  (`SIGNUPS_ENABLED=false`); set `SIGNUP_ALLOWLIST` plus `SIGNUPS_ENABLED=true`
+  to invite others.
 - `ENCRYPTION_KEY` encrypts stored provider credentials. Never regenerate it on
   an existing deployment - every saved key becomes unreadable.
 - `/data` (agent homes, artifacts, sessions) is on a persistent volume.

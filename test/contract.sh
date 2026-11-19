@@ -27,6 +27,8 @@ docker network create "$NET" >/dev/null || fail "docker network"
 docker run -d --name "$PG" --network "$NET" \
   -e POSTGRES_PASSWORD="$PGPASS" -e POSTGRES_DB=rakazo \
   postgres:16-alpine >/dev/null || fail "postgres start"
+for _ in $(seq 1 30); do docker exec "$PG" pg_isready -U postgres -d rakazo >/dev/null 2>&1 \
+  && docker exec "$PG" psql -U postgres -d rakazo -tAc "select 1" >/dev/null 2>&1 && break; sleep 1; done
 
 # Anonymous pullability is itself part of the contract: Railway pulls without
 # credentials, so this must work in a logged-out registry context too.

@@ -8,9 +8,9 @@
     "$note": "Pinned to the v0.13.0 image tag, not edge: edge moves on every main build and a template must not silently change under existing deployers."
   },
   "image": {
-    "ref": "ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r1",
+    "ref": "ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r2",
     "built_from": "https://github.com/hmseeb/rakazo-railway",
-    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.13.0. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data, patches vite allowedHosts (see boot.sh), then runuser-drops to node and boots all three processes with wait -n. Since v0.13.0 the healthcheck Host is allowed through the RAKAZO_ALLOWED_HOSTS env (healthcheck.railway.app), not a vite.config.ts sed; migrations run via pnpm --filter @rakazo/api db:deploy. CI runs test/contract.sh before pushing a tag.",
+    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.13.0. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data, patches vite allowedHosts (see boot.sh), then runuser-drops to node and boots all three processes with wait -n. Since v0.13.0 the healthcheck Host is allowed through the RAKAZO_ALLOWED_HOSTS env (healthcheck.railway.app), not a vite.config.ts sed; migrations run via pnpm --filter @rakazo/api db:deploy. CI runs test/contract.sh before pushing a tag. r2: when OWNER_EMAIL is set, boot runs upstream's bootstrap-owner after migrations (skips an already verified account), and the stack runs without OWNER_PASSWORD.",
     "$platform": "Railway is linux/amd64. A local build on Apple Silicon pushed as-is produces an arm64-only tag whose Railway deploy fails INSTANTLY with zero container logs (hit 2026-09-10 on v0.1.6-r1). Local builds must pass --platform linux/amd64; the GitHub Actions path is amd64-native and is the durable build."
   },
   "topology": {
@@ -43,7 +43,7 @@
     },
     {
       "name": "Rakazo (Single Container)",
-      "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r1",
+      "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r2",
       "start_command": null,
       "$note_start_command": "Deliberately empty. Railway execs a start command raw and DISCARDS the image entrypoint; the entrypoint is where the /data chown and the whole boot sequence live.",
       "healthcheck": {
@@ -99,8 +99,8 @@
           "$note": "vite preview allowedHosts is exactly [RAKAZO_HOST]; without the public hostname every browser request is 403 Blocked."
         },
         "SIGNUPS_ENABLED": {
-          "value": "true",
-          "$note": "v0.13.0 has no deployment-owner role (isDeploymentOwner is always false). Deployers wanting a private instance set SIGNUP_ALLOWLIST or flip this to false after registering."
+          "value": "false",
+          "$note": "Closed by default: on a public URL strangers could otherwise register (upstream answers 400 REGISTRATION_CLOSED). The deployer's account comes from OWNER_EMAIL."
         },
         "SANDBOX_PROVIDER": {
           "value": "none",
@@ -124,6 +124,15 @@
         },
         "PI_DEFAULT_PROVIDER": {
           "value": "openrouter"
+        },
+        "OWNER_EMAIL": {
+          "value": "",
+          "prompt": true,
+          "$note": "Required. bootstrap-owner creates and verifies this account on first boot."
+        },
+        "OWNER_PASSWORD": {
+          "value": "${{secret(24)}}",
+          "$note": "Generated first password (upstream requires 16+). Changing it later does not reset the account."
         }
       }
     }

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Clicks the deploy button the way a stranger would: no projectId, so Railway
-makes a fresh project. The optional variables keep their defaults, which is
-exactly what the button does when a deployer fills in nothing."""
+makes a fresh project. The optional variables keep their defaults; the one
+required prompt, OWNER_EMAIL, is filled in like the deploy form does.
+
+Usage: deploy_as_stranger.py <owner-email> [config.json]
+  config.json: a serializedConfig to deploy (upsert.py --print), so a new image
+  can be tested before the live template changes. Default: the live template.
+Test deploys go to My Projects (workspace rule since 2026-11-26)."""
 import json
 import pathlib
 import sys
@@ -11,12 +16,19 @@ sys.path.insert(0, str(pathlib.Path("~/.claude/skills/create-template-for-railwa
 import rw  # noqa: E402
 
 TEMPLATE_ID = "f4af9e50-05a3-4925-a48d-fdacd2595720"
-WORKSPACE_ID = "fc4796db-2c6c-4354-a564-d4a1d900af53"
+WORKSPACE_ID = "d10da65a-297f-4ba4-8cef-2fa9bb45fdef"  # My Projects (test deploys)
 
-config = rw.gql(
-    "query($id: String!) { template(id: $id) { serializedConfig } }",
-    {"id": TEMPLATE_ID},
-)["template"]["serializedConfig"]
+owner_email = sys.argv[1]
+if len(sys.argv) > 2:
+    config = json.loads(pathlib.Path(sys.argv[2]).read_text())
+else:
+    config = rw.gql(
+        "query($id: String!) { template(id: $id) { serializedConfig } }",
+        {"id": TEMPLATE_ID},
+    )["template"]["serializedConfig"]
+app = next(s for s in config["services"].values() if s["name"] == "Rakazo")
+app["variables"]["OWNER_EMAIL"]["defaultValue"] = owner_email
+print("deploying image", app["source"]["image"])
 
 result = rw.gql(
     """mutation($input: TemplateDeployV2Input!) {
@@ -25,7 +37,7 @@ result = rw.gql(
     {"input": {"templateId": TEMPLATE_ID, "workspaceId": WORKSPACE_ID, "serializedConfig": config}},
 )["templateDeployV2"]
 project_id = result["projectId"]
-print("fresh project:", project_id)
+print("fresh project:", project_id, flush=True)
 
 states = []
 for _ in range(60):
@@ -61,6 +73,8 @@ for _ in range(60):
 
 print(json.dumps({
     "projectId": project_id,
+    "projectName": project["name"],
     "environmentId": project["environments"]["edges"][0]["node"]["id"],
+    "services": {e["node"]["name"]: e["node"]["id"] for e in project["services"]["edges"]},
     "states": states,
 }, indent=2))

@@ -10,7 +10,7 @@ optional cloud computers.
 
 - **Rakazo** - one container running the api, the Graphile worker, and the web
   UI (vite preview). Built from `ghcr.io/hmseeb/rakazo-railway`, a thin wrapper
-  over upstream's `ghcr.io/elie222/rakazo/app:v0.13.0` that fixes Railway volume
+  over upstream's `ghcr.io/elie222/rakazo/app:v0.16.0` that fixes Railway volume
   ownership and boots the three processes together.
 - **Postgres** - Railway's postgres-ssl image with a persistent volume.
 

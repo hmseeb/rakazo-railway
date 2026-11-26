@@ -72,7 +72,7 @@ Troubleshooting:
 - **Never regenerate `ENCRYPTION_KEY`** on an existing deployment: it encrypts
   every stored provider key, and changing it makes them all unreadable.
 
-Upgrades: the image tag is pinned (`v0.13.0-r2`). To move to a newer Rakazo release,
+Upgrades: the image tag is pinned (`v0.16.0-r1`). To move to a newer Rakazo release,
 update the Rakazo service's image tag and redeploy. Migrations run on every
 boot. Bot conversations and memory live in Postgres; agent homes and artifacts
 live on the `/data` volume; both survive redeploys.

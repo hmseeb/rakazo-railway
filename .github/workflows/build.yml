@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths: [image/**, test/**, .github/workflows/build.yml]
 env:
-  TAG: v0.13.0-r2
+  TAG: v0.16.0-r1
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,6 +29,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}/app:${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - run: bash test/version.sh "${TAG%-r*}" "$TAG"
       - run: bash test/contract.sh ghcr.io/${{ github.repository }}/app:${{ env.TAG }}
       # Public repo + GITHUB_TOKEN push = anonymously pullable package, which is
       # exactly what Railway's puller needs. No visibility flip.

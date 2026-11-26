@@ -5,7 +5,7 @@
 #  2. api and worker share DATA_DIR and Railway volumes attach to one service
 #     only, so api+worker+web run in one container - which needs a boot
 #     sequence, which upstream's single-process CMD does not provide.
-FROM ghcr.io/elie222/rakazo/app:v0.13.0
+FROM ghcr.io/elie222/rakazo/app:v0.16.0
 USER root
 COPY boot.sh /usr/local/bin/rakazo-boot
 RUN chmod 755 /usr/local/bin/rakazo-boot

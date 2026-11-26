@@ -4,13 +4,14 @@
   "upstream": {
     "repo": "https://github.com/elie222/rakazo",
     "license": "Apache-2.0",
-    "version": "v0.13.0 (release 2026-11-18)",
-    "$note": "Pinned to the v0.13.0 image tag, not edge: edge moves on every main build and a template must not silently change under existing deployers."
+    "version": "v0.16.0 (release 2026-11-24)",
+    "$note": "Pinned to the v0.16.0 image tag, not edge: edge moves on every main build and a template must not silently change under existing deployers.",
+    "$upgrade_v0.13_to_v0.16": "Read the v0.14.0, v0.15.0 and v0.16.0 self-host upgrade notes (2026-11-26). Nothing in this template needed changing: SIGNUPS_ENABLED=false is a readable value (v0.14 now refuses to start on unreadable ones); WELCOME_EMAIL_ENABLED and BOT_MESSAGE_MAX_HOPS were removed but never set here; v0.16 refuses signed-in API calls from untrusted origins, and WEB_ORIGIN/BETTER_AUTH_URL already equal the public domain; NODE_ENV=production keeps the sign-in rate limit on (AUTH_RATE_LIMIT_ENABLED unset). CONTENT_ENCRYPTION defaults to on outside NODE_ENV=development (resolveContentEncryption in packages/core/src/node/secrets-guard.ts), same as upstream's own Railway start.sh exports. v0.14's optional 'content-encryption migrate' only encrypts run prompts written before the upgrade; it is a tsx dev script not shipped as dist in the app image, so the boot does not run it."
   },
   "image": {
-    "ref": "ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r2",
+    "ref": "ghcr.io/hmseeb/rakazo-railway/app:v0.16.0-r1",
     "built_from": "https://github.com/hmseeb/rakazo-railway",
-    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.13.0. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data, patches vite allowedHosts (see boot.sh), then runuser-drops to node and boots all three processes with wait -n. Since v0.13.0 the healthcheck Host is allowed through the RAKAZO_ALLOWED_HOSTS env (healthcheck.railway.app), not a vite.config.ts sed; migrations run via pnpm --filter @rakazo/api db:deploy. CI runs test/contract.sh before pushing a tag. r2: when OWNER_EMAIL is set, boot runs upstream's bootstrap-owner after migrations (skips an already verified account), and the stack runs without OWNER_PASSWORD.",
+    "$note": "Thin wrapper over ghcr.io/elie222/rakazo/app:v0.16.0. Two reasons upstream's image alone cannot deploy on Railway: (1) Railway volumes mount root-owned and upstream runs as uid 1000, so /data (agent homes, artifacts, push tokens, Pi sessions) is EACCES; (2) api and worker share DATA_DIR and Railway volumes attach to one service only, so api+worker+web must run in one container, which needs a multi-process boot upstream's CMD does not have. Wrapper = USER root entrypoint that chowns /data, patches vite allowedHosts (see boot.sh), then runuser-drops to node and boots all three processes with wait -n. Since upstream 0.13 the healthcheck Host is allowed through the RAKAZO_ALLOWED_HOSTS env (healthcheck.railway.app), not a vite.config.ts sed; migrations run via pnpm --filter @rakazo/api db:deploy. CI runs test/version.sh and test/contract.sh before pushing a tag. r2: when OWNER_EMAIL is set, boot runs upstream's bootstrap-owner after migrations (skips an already verified account), and the stack runs without OWNER_PASSWORD.",
     "$platform": "Railway is linux/amd64. A local build on Apple Silicon pushed as-is produces an arm64-only tag whose Railway deploy fails INSTANTLY with zero container logs (hit 2026-09-10 on v0.1.6-r1). Local builds must pass --platform linux/amd64; the GitHub Actions path is amd64-native and is the durable build."
   },
   "topology": {
@@ -43,7 +44,7 @@
     },
     {
       "name": "Rakazo (Single Container)",
-      "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.13.0-r2",
+      "image": "ghcr.io/hmseeb/rakazo-railway/app:v0.16.0-r1",
       "start_command": null,
       "$note_start_command": "Deliberately empty. Railway execs a start command raw and DISCARDS the image entrypoint; the entrypoint is where the /data chown and the whole boot sequence live.",
       "healthcheck": {
@@ -105,7 +106,7 @@
         "SANDBOX_PROVIDER": {
           "value": "none",
           "prompt": true,
-          "$note": "none | e2b | daytona (box was removed upstream by v0.13.0). docker is not possible on Railway. none = bots chat but cannot open a computer."
+          "$note": "none | e2b | daytona (box was removed upstream in 0.13). docker is not possible on Railway. none = bots chat but cannot open a computer."
         },
         "E2B_API_KEY": {
           "value": "",
